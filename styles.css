@@ -1,0 +1,135 @@
+:root {
+  color-scheme: light;
+  --paper: #f3f3f0;
+  --ink: #050505;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.32), transparent 24%),
+    radial-gradient(circle at 84% 76%, rgba(255, 42, 114, 0.16), transparent 28%),
+    linear-gradient(135deg, #151515, #e7e7e1 48%, #050505);
+  font-family:
+    "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+}
+
+.stage {
+  display: grid;
+  place-items: center;
+  width: min(100vw, 76vh);
+  height: min(141.406vw, 100vh);
+  padding: clamp(10px, 1.8vmin, 22px);
+}
+
+canvas {
+  display: block;
+  width: min(100%, calc(100vh * 0.70718));
+  height: auto;
+  max-height: calc(100vh - clamp(20px, 3.6vmin, 44px));
+  aspect-ratio: 768 / 1086;
+  background: var(--paper);
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.48),
+    0 2px 0 rgba(255, 255, 255, 0.8) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.24);
+}
+
+@media (max-aspect-ratio: 7 / 10) {
+  body {
+    overflow: auto;
+  }
+
+  .stage {
+    width: 100vw;
+    height: auto;
+  }
+}
+
+.dock {
+  position: fixed;
+  top: 8px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(8, 8, 8, 0.34);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: #f3f3f0;
+  opacity: 0.42;
+  transition: opacity 0.16s ease, background 0.16s ease;
+}
+
+.dock:hover,
+.dock:focus-within {
+  background: rgba(8, 8, 8, 0.58);
+  opacity: 1;
+}
+
+.dock-btn {
+  cursor: pointer;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: uppercase;
+  transition: background 0.15s ease;
+}
+
+.dock-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.dock-status {
+  padding: 0 6px;
+  max-width: 160px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0;
+  opacity: 0.7;
+}
+
+body.dragover::after {
+  content: "release to play";
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #f3f3f0;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 26px;
+  letter-spacing: 0.22em;
+  z-index: 20;
+  pointer-events: none;
+}

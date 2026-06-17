@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>异质同构 · VJ Engine</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      /* VJ skin: dark stage, glowing canvas, blend-mode title overlay. */
+      body {
+        background:
+          radial-gradient(circle at 50% 30%, #14141a 0%, #070708 55%, #000 100%);
+      }
+
+      .stage {
+        position: relative;
+      }
+
+      canvas#poster {
+        background: #050506;
+        box-shadow:
+          0 30px 120px rgba(0, 0, 0, 0.7),
+          0 0 0 1px rgba(255, 255, 255, 0.06),
+          0 0 80px rgba(60, 90, 255, 0.12);
+      }
+
+      .vj-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: clamp(22px, 5vmin, 52px) clamp(20px, 4.5vmin, 48px);
+        z-index: 5;
+        mix-blend-mode: difference;
+        color: #f4f4f0;
+        font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
+      }
+
+      .vj-overlay .head {
+        display: flex;
+        flex-direction: column;
+        gap: clamp(8px, 1.6vmin, 16px);
+      }
+
+      .vj-overlay .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        font-size: clamp(10px, 1.5vmin, 13px);
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        opacity: 0.9;
+      }
+
+      .vj-overlay .live-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+      }
+
+      .vj-overlay .song-name {
+        font-size: clamp(8px, 1.2vmin, 11px);
+        letter-spacing: 0.12em;
+        text-transform: none;
+        opacity: 0.72;
+        font-style: italic;
+        font-family: Georgia, "Times New Roman", serif;
+        max-width: clamp(80px, 18vmin, 160px);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        text-align: right;
+        display: none;
+      }
+
+      .vj-overlay .song-name.visible {
+        display: block;
+      }
+
+      .vj-overlay .title {
+        align-self: flex-start;
+      }
+
+      .vj-overlay .title h1 {
+        margin: 0;
+        font-weight: 800;
+        font-size: clamp(20px, 4.4vmin, 38px);
+        line-height: 1.06;
+        letter-spacing: 0.06em;
+      }
+
+      .vj-overlay .title p {
+        margin: 5px 0 0;
+        font-size: clamp(10px, 1.6vmin, 14px);
+        letter-spacing: 0.26em;
+        opacity: 0.82;
+      }
+    </style>
+  </head>
+  <body data-fullbleed="3d">
+    <!-- Music insertion is the ONLY interaction: pick a file or drop one on the page. -->
+    <aside id="audio-dock" class="dock" aria-label="Insert music">
+      <label class="dock-btn" title="插入音乐 / Insert a music file">
+        <input type="file" id="audio-file" accept="audio/*" hidden />
+        <span>♪ 插入音乐</span>
+      </label>
+      <button type="button" class="dock-btn" id="audio-toggle" title="播放 / 暂停" hidden>⏸ 暂停</button>
+      <span class="dock-status" id="audio-status">插入音乐以开始</span>
+    </aside>
+
+    <main class="stage" aria-label="Music-driven VJ poster">
+      <canvas id="poster" width="768" height="1086" data-style="color" data-mode="3d" data-skin="vj"></canvas>
+      <div class="vj-overlay" aria-hidden="true">
+        <div class="head">
+          <div class="top">
+            <span>music visualization</span>
+            <div class="live-group">
+              <span>live</span>
+              <span class="song-name" id="vj-song-name"></span>
+            </div>
+          </div>
+          <div class="title">
+            <h1>异质同构 · 与蒙德里安</h1>
+            <p>音乐可视化创意动态海报</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script src="./music.js"></script>
+    <script type="module" src="./poster-vj.js"></script>
+  </body>
+</html>
