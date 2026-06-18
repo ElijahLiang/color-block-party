@@ -1,0 +1,6 @@
+# Local scratch / reference renders (not part of the published project)
+output/
+preview-mondrian-v2.png
+
+# macOS / editor cruft
+.DS_Store

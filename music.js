@@ -83,6 +83,7 @@
     analyser: null,
     source: null,
     audio: null,
+    objectUrl: null,
     stream: null,
     spectrum: null,
     timeBuf: null,
@@ -184,9 +185,10 @@
   function detach() {
     if (state.source) { try { state.source.disconnect(); } catch (e) {} state.source = null; }
     if (state.audio) {
-      try { state.audio.pause(); state.audio.src = ""; state.audio.load(); } catch (e) {}
+      try { state.audio.pause(); state.audio.removeAttribute("src"); state.audio.load(); state.audio.remove(); } catch (e) {}
       state.audio = null;
     }
+    if (state.objectUrl) { try { URL.revokeObjectURL(state.objectUrl); } catch (e) {} state.objectUrl = null; }
     if (state.stream) {
       state.stream.getTracks().forEach((t) => t.stop());
       state.stream = null;
@@ -201,20 +203,51 @@
     if (state.kickMagPrev) state.kickMagPrev.fill(0);
   }
 
+  // Resolve as soon as the element is playable. Safari never advances a DETACHED
+  // <audio>'s readyState (so `canplay` never fires and loading hangs forever),
+  // hence the caller attaches it to the DOM first. We also accept the earliest of
+  // several readiness events and fall back to a timeout — anything but hanging.
+  function waitUntilPlayable(audio) {
+    return new Promise((resolve, reject) => {
+      let done = false;
+      const events = ["loadeddata", "canplay", "canplaythrough"];
+      const cleanup = () => {
+        events.forEach((e) => audio.removeEventListener(e, finish));
+        audio.removeEventListener("error", fail);
+        clearTimeout(timer);
+      };
+      const finish = () => { if (done) return; done = true; cleanup(); resolve(); };
+      const fail = () => { if (done) return; done = true; cleanup(); reject(new Error("audio load failed")); };
+      if (audio.readyState >= 2) { resolve(); return; }   // HAVE_CURRENT_DATA
+      events.forEach((e) => audio.addEventListener(e, finish, { once: true }));
+      audio.addEventListener("error", fail, { once: true });
+      const timer = setTimeout(() => { audio.error ? fail() : finish(); }, 8000);
+    });
+  }
+
   async function loadFile(file) {
     ensureCtx();
     await resume();
     detach();
     const url = URL.createObjectURL(file);
+    state.objectUrl = url;
     const audio = new Audio();
-    audio.src = url;
     audio.loop = false;  // let the song end so the Mondrian composition completes
-    audio.crossOrigin = "anonymous";
     audio.preload = "auto";
-    await new Promise((resolve, reject) => {
-      audio.addEventListener("canplay", resolve, { once: true });
-      audio.addEventListener("error", () => reject(new Error("audio load failed")), { once: true });
-    });
+    // Hidden, but ATTACHED to the document: Safari won't load (or fire canplay on)
+    // a detached media element, which is what left the UI stuck on "loading…".
+    audio.style.display = "none";
+    document.body.appendChild(audio);
+    audio.src = url;
+    audio.load();
+    try {
+      await waitUntilPlayable(audio);
+    } catch (e) {
+      try { audio.remove(); } catch (_) {}
+      try { URL.revokeObjectURL(url); } catch (_) {}
+      if (state.objectUrl === url) state.objectUrl = null;
+      throw e;
+    }
     audio.addEventListener("ended", () => { state.ended = true; }, { once: true });
     const src = state.ctx.createMediaElementSource(audio);
     src.connect(state.analyser);

@@ -61,12 +61,26 @@ const halfW = ((GX - 1) / 2) * SPACING;
 const halfH = ((GY - 1) / 2) * SPACING;
 const halfD = ((GZ - 1) / 2) * SPACING;
 
-function pickColor() {
-  const r = Math.random();
-  if (r < 0.3) return PALETTE.white;
-  if (r < 0.5) return PALETTE.black;
-  if (r < 0.7) return PALETTE.red;
-  if (r < 0.87) return PALETTE.blue;
+// Stable pseudo-randomness keeps the original lively density while giving the
+// cube field a repeatable composition instead of reshuffling on every refresh.
+function hash01(x, y, z, salt = 0) {
+  const n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7 + salt * 53.3) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+function pickColor(x, y, z) {
+  const accent = hash01(x, y, z, 1);
+  // Loose colour territories create an asymmetric Mondrian rhythm without
+  // turning the cloud into rigid stripes.
+  if (x <= 2 && y >= 7 && accent < 0.34) return PALETTE.red;
+  if (x >= 5 && y >= 5 && accent < 0.28) return PALETTE.blue;
+  if (x >= 4 && y <= 3 && accent < 0.22) return PALETTE.yellow;
+
+  const r = hash01(x, y, z, 2);
+  if (r < 0.36) return PALETTE.white;
+  if (r < 0.57) return PALETTE.black;
+  if (r < 0.75) return PALETTE.red;
+  if (r < 0.9) return PALETTE.blue;
   return PALETTE.yellow;
 }
 
@@ -87,6 +101,8 @@ const baseColor = [];
 const bandOf = new Int32Array(COUNT);
 const seed = new Float32Array(COUNT);
 const spin = new Float32Array(COUNT * 3);
+const sizeRhythm = new Float32Array(COUNT);
+const depthTone = new Float32Array(COUNT);
 
 let ci = 0;
 for (let x = 0; x < GX; x++) {
@@ -97,12 +113,17 @@ for (let x = 0; x < GX; x++) {
       const hz = (z - (GZ - 1) / 2) * SPACING;
       home[ci * 3] = hx; home[ci * 3 + 1] = hy; home[ci * 3 + 2] = hz;
       pos[ci * 3] = hx; pos[ci * 3 + 1] = hy; pos[ci * 3 + 2] = hz;
-      baseColor[ci] = pickColor();
+      baseColor[ci] = pickColor(x, y, z);
       bandOf[ci] = Math.min(7, Math.floor((y / GY) * 8));
-      seed[ci] = Math.random() * 1000;
-      spin[ci * 3] = rand(-1, 1);
-      spin[ci * 3 + 1] = rand(-1, 1);
-      spin[ci * 3 + 2] = rand(-1, 1);
+      seed[ci] = hash01(x, y, z, 3) * 1000;
+      spin[ci * 3] = hash01(x, y, z, 4) * 2 - 1;
+      spin[ci * 3 + 1] = hash01(x, y, z, 5) * 2 - 1;
+      spin[ci * 3 + 2] = hash01(x, y, z, 6) * 2 - 1;
+      const sizeHash = hash01(x, y, z, 7);
+      sizeRhythm[ci] = sizeHash > 0.9 ? 1.16 : sizeHash < 0.16 ? 0.88 : 1;
+      // Rear layers stay slightly quieter, so the front plane reads first while
+      // the five-layer depth and explosive perspective remain intact.
+      depthTone[ci] = 0.72 + (z / Math.max(1, GZ - 1)) * 0.28;
       ci++;
     }
   }
@@ -492,7 +513,7 @@ function updateCubes(dt, t) {
     const my = Math.cos(mt * 1.31) * micro;
     const mz = Math.sin(mt * 0.79) * micro;
 
-    const scale = CUBE * (0.62 + band * 1.15 + kickEnv * 0.45 + levelEnv * 0.25);
+    const scale = CUBE * sizeRhythm[k] * (0.62 + band * 1.15 + kickEnv * 0.45 + levelEnv * 0.25);
     const spinMul = musicActive ? (0.25 + band * 0.7 + chorusEnv * 0.5) * motionGate : 0;
 
     dummy.position.set(pos[o] + jx + mx, pos[o + 1] + jy + my, pos[o + 2] + jz + mz);
@@ -506,7 +527,8 @@ function updateCubes(dt, t) {
     cubes.setMatrixAt(k, dummy.matrix);
 
     const bc = baseColor[k];
-    const flash = Math.min(1.16, 0.76 + band * 0.44 + kickEnv * 0.3 + beatEnv * 0.1 + chorusEnv * 0.16);
+    const flash = Math.min(1.16, 0.76 + band * 0.44 + kickEnv * 0.3 + beatEnv * 0.1 + chorusEnv * 0.16)
+      * depthTone[k];
     tmpColor.copy(bc).multiplyScalar(flash);
     cubes.setColorAt(k, tmpColor);
   }
